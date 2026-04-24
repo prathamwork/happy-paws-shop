@@ -53,7 +53,7 @@ export default function AdminProductForm() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
+  } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       name: editing?.name ?? "",
