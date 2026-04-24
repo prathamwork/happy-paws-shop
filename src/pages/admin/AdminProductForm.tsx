@@ -28,7 +28,17 @@ const schema = z.object({
   description: z.string().trim().min(10, "Add a short description").max(1000),
   tags: z.string().max(200).optional(),
 });
-type FormValues = z.infer<typeof schema>;
+type FormValues = {
+  name: string;
+  brand: string;
+  category: string;
+  price: number;
+  originalPrice?: number;
+  stock: number;
+  rating: number;
+  description: string;
+  tags?: string;
+};
 
 export default function AdminProductForm() {
   const { id } = useParams();
