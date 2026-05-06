@@ -5,8 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { useTheme } from "@/store/theme";
+import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
+import { getProducts } from "@/services/api";
+import type { Product } from "@/types/api";
+import { useEffect } from "react";
+import { productImg } from "@/lib/img";
+import { formatPrice } from "@/lib/format";
+import { LogOut } from "lucide-react";
 
 const navLinks = [
   { to: "/", label: "Home" },
