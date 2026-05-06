@@ -157,12 +157,12 @@ const Navbar = () => {
                       onClick={() => setSearchOpen(false)}
                       className="flex items-center gap-3 p-3 hover:bg-muted transition"
                     >
-                      <img src={p.image} alt={p.name} className="size-12 rounded-lg object-cover" loading="lazy" />
+                      <img src={productImg(p.image)} alt={p.name} className="size-12 rounded-lg object-cover" loading="lazy" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.brand}</p>
+                        <p className="text-xs text-muted-foreground">Stock: {p.stock}</p>
                       </div>
-                      <span className="text-sm font-semibold text-primary">${p.price}</span>
+                      <span className="text-sm font-semibold text-primary">{formatPrice(p.price)}</span>
                     </Link>
                   ))}
                 </div>
