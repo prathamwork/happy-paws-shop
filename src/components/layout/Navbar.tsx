@@ -118,11 +118,24 @@ const Navbar = () => {
               )}
             </Button>
           </Link>
-          <Link to="/login" className="hidden md:block">
-            <Button variant="ghost" size="icon" aria-label="Account">
-              <User className="size-5" />
-            </Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/dashboard" className="hidden md:block">
+                <Button variant="ghost" size="icon" aria-label="Account">
+                  <User className="size-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="icon" className="hidden md:inline-flex" aria-label="Sign out" onClick={() => { logout(); navigate("/"); }}>
+                <LogOut className="size-5" />
+              </Button>
+            </>
+          ) : (
+            <Link to="/login" className="hidden md:block">
+              <Button variant="ghost" size="icon" aria-label="Account">
+                <User className="size-5" />
+              </Button>
+            </Link>
+          )}
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(v => !v)} aria-label="Menu">
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
