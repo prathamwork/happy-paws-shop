@@ -1,12 +1,39 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Loader2, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/store/cart";
+import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, toNumber } from "@/lib/format";
+import { productImg } from "@/lib/img";
+import type { CartItem, Product } from "@/types/api";
+
+const isProduct = (p: number | Product): p is Product => typeof p === "object";
 
 const Cart = () => {
-  const { items, setQty, remove, subtotal } = useCart();
+  const { items, loading, fetch, setQty, remove, subtotal } = useCart();
+  const user = useAuth((s) => s.user);
+
+  useEffect(() => { if (user) fetch(); }, [user, fetch]);
+
+  if (!user) {
+    return (
+      <div className="container py-20 text-center">
+        <h1 className="font-display text-3xl font-bold mb-4">Sign in to view your cart</h1>
+        <Link to="/login"><Button size="lg" className="rounded-full">Sign in</Button></Link>
+      </div>
+    );
+  }
+
+  if (loading && items.length === 0) {
+    return (
+      <div className="container py-20 text-center">
+        <Loader2 className="size-8 animate-spin mx-auto text-muted-foreground" />
+      </div>
+    );
+  }
+
   const sub = subtotal();
   const tax = sub * 0.08;
   const shipping = sub > 49 || sub === 0 ? 0 : 6.99;
@@ -25,49 +52,60 @@ const Cart = () => {
     );
   }
 
+  const renderItem = (item: CartItem, i: number) => {
+    if (!isProduct(item.product)) return null;
+    const p = item.product;
+    return (
+      <motion.div
+        key={p.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: i * 0.05 }}
+        className="bg-card border border-border rounded-3xl p-4 flex gap-4 items-center"
+      >
+        <Link to={`/product/${p.id}`} className="shrink-0">
+          <img
+            src={productImg(p.image)}
+            alt={p.name}
+            className="size-24 md:size-28 object-cover rounded-2xl bg-muted"
+            loading="lazy"
+          />
+        </Link>
+        <div className="flex-1 min-w-0">
+          <Link to={`/product/${p.id}`}>
+            <h3 className="font-medium line-clamp-2 hover:text-primary transition">{p.name}</h3>
+          </Link>
+          <p className="font-display text-lg font-bold text-primary mt-1">{formatPrice(p.price)}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Subtotal: {formatPrice(toNumber(p.price) * item.quantity)}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center bg-muted rounded-full">
+            <Button size="icon" variant="ghost" className="size-8 rounded-full"
+              onClick={() => setQty(p.id, item.quantity - 1)}>
+              <Minus className="size-3" />
+            </Button>
+            <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+            <Button size="icon" variant="ghost" className="size-8 rounded-full"
+              onClick={() => setQty(p.id, item.quantity + 1)}>
+              <Plus className="size-3" />
+            </Button>
+          </div>
+          <button onClick={() => remove(p.id)}
+            className="text-muted-foreground hover:text-destructive transition text-xs flex items-center gap-1">
+            <Trash2 className="size-3" /> Remove
+          </button>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="container py-10 md:py-14">
       <h1 className="font-display text-4xl md:text-5xl font-bold mb-8">Your cart</h1>
       <div className="grid lg:grid-cols-[1fr_380px] gap-10">
-        <div className="space-y-4">
-          {items.map((item, i) => (
-            <motion.div
-              key={item.product.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-card border border-border rounded-3xl p-4 flex gap-4 items-center"
-            >
-              <Link to={`/product/${item.product.id}`} className="shrink-0">
-                <img src={item.product.image} alt={item.product.name} className="size-24 md:size-28 object-cover rounded-2xl bg-muted" loading="lazy" />
-              </Link>
-              <div className="flex-1 min-w-0">
-                <Link to={`/product/${item.product.id}`}>
-                  <h3 className="font-medium line-clamp-2 hover:text-primary transition">{item.product.name}</h3>
-                </Link>
-                <p className="text-xs text-muted-foreground mt-1">{item.product.brand}</p>
-                <p className="font-display text-lg font-bold text-primary mt-1">{formatPrice(item.product.price)}</p>
-              </div>
-              <div className="flex flex-col items-end gap-3">
-                <div className="flex items-center bg-muted rounded-full">
-                  <Button size="icon" variant="ghost" className="size-8 rounded-full" onClick={() => setQty(item.product.id, item.quantity - 1)}>
-                    <Minus className="size-3" />
-                  </Button>
-                  <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
-                  <Button size="icon" variant="ghost" className="size-8 rounded-full" onClick={() => setQty(item.product.id, item.quantity + 1)}>
-                    <Plus className="size-3" />
-                  </Button>
-                </div>
-                <button
-                  onClick={() => remove(item.product.id)}
-                  className="text-muted-foreground hover:text-destructive transition text-xs flex items-center gap-1"
-                >
-                  <Trash2 className="size-3" /> Remove
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <div className="space-y-4">{items.map(renderItem)}</div>
 
         <aside className="lg:sticky lg:top-24 self-start bg-card border border-border rounded-3xl p-6 space-y-4">
           <h3 className="font-display text-xl font-bold">Order summary</h3>

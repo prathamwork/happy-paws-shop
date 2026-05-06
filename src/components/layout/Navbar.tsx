@@ -5,8 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/store/cart";
 import { useWishlist } from "@/store/wishlist";
 import { useTheme } from "@/store/theme";
+import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
+import { getProducts } from "@/services/api";
+import type { Product } from "@/types/api";
+import { useEffect } from "react";
+import { productImg } from "@/lib/img";
+import { formatPrice } from "@/lib/format";
+import { LogOut } from "lucide-react";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -17,17 +23,32 @@ const navLinks = [
 ];
 
 const Navbar = () => {
-  const totalItems = useCart(s => s.totalItems());
-  const wishCount = useWishlist(s => s.ids.length);
+  const totalItems = useCart((s) => s.totalItems());
+  const wishCount = useWishlist((s) => s.items.length);
+  const fetchCart = useCart((s) => s.fetch);
+  const fetchWish = useWishlist((s) => s.fetch);
+  const { user, logout, fetchProfile } = useAuth();
   const { dark, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
   const navigate = useNavigate();
 
-  const suggestions = q.length > 0
-    ? products.filter(p => p.name.toLowerCase().includes(q.toLowerCase())).slice(0, 5)
-    : [];
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+  useEffect(() => {
+    if (user) { fetchCart(); fetchWish(); }
+  }, [user, fetchCart, fetchWish]);
+
+  useEffect(() => {
+    if (q.length === 0) { setSuggestions([]); return; }
+    const t = setTimeout(() => {
+      getProducts({ search: q })
+        .then((list) => setSuggestions((list || []).slice(0, 5)))
+        .catch(() => setSuggestions([]));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,11 +118,24 @@ const Navbar = () => {
               )}
             </Button>
           </Link>
-          <Link to="/login" className="hidden md:block">
-            <Button variant="ghost" size="icon" aria-label="Account">
-              <User className="size-5" />
-            </Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/dashboard" className="hidden md:block">
+                <Button variant="ghost" size="icon" aria-label="Account">
+                  <User className="size-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="icon" className="hidden md:inline-flex" aria-label="Sign out" onClick={() => { logout(); navigate("/"); }}>
+                <LogOut className="size-5" />
+              </Button>
+            </>
+          ) : (
+            <Link to="/login" className="hidden md:block">
+              <Button variant="ghost" size="icon" aria-label="Account">
+                <User className="size-5" />
+              </Button>
+            </Link>
+          )}
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(v => !v)} aria-label="Menu">
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
@@ -136,12 +170,12 @@ const Navbar = () => {
                       onClick={() => setSearchOpen(false)}
                       className="flex items-center gap-3 p-3 hover:bg-muted transition"
                     >
-                      <img src={p.image} alt={p.name} className="size-12 rounded-lg object-cover" loading="lazy" />
+                      <img src={productImg(p.image)} alt={p.name} className="size-12 rounded-lg object-cover" loading="lazy" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.brand}</p>
+                        <p className="text-xs text-muted-foreground">Stock: {p.stock}</p>
                       </div>
-                      <span className="text-sm font-semibold text-primary">${p.price}</span>
+                      <span className="text-sm font-semibold text-primary">{formatPrice(p.price)}</span>
                     </Link>
                   ))}
                 </div>
