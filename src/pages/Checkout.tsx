@@ -1,27 +1,53 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useCart } from "@/store/cart";
+import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, toNumber } from "@/lib/format";
+import { productImg } from "@/lib/img";
 import { toast } from "sonner";
-import { CreditCard, Wallet, Building2 } from "lucide-react";
-import { useState } from "react";
+import { Banknote, CreditCard, Loader2, Smartphone } from "lucide-react";
+import { createOrder } from "@/services/api";
+import type { CartItem, PaymentMethod, Product } from "@/types/api";
+
+const isProduct = (p: number | Product): p is Product => typeof p === "object";
 
 const Checkout = () => {
-  const { items, subtotal, clear } = useCart();
+  const { items, subtotal, fetch, clear } = useCart();
+  const user = useAuth((s) => s.user);
   const navigate = useNavigate();
-  const [pay, setPay] = useState("card");
+  const [pay, setPay] = useState<PaymentMethod>("cod");
+  const [placing, setPlacing] = useState(false);
+
+  useEffect(() => { if (user) fetch(); }, [user, fetch]);
+
   const sub = subtotal();
   const tax = sub * 0.08;
   const shipping = sub > 49 ? 0 : 6.99;
   const total = sub + tax + shipping;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const orderId = "PW-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    toast.success("Order placed! 🎉");
-    clear();
-    navigate(`/order-success?id=${orderId}`);
+    if (!user) { navigate("/login"); return; }
+    setPlacing(true);
+    try {
+      const order = await createOrder({ payment_method: pay });
+      toast.success("Order placed! 🎉");
+      await clear().catch(() => {});
+      navigate(`/order-success?id=${order.id}`);
+    } catch {
+      toast.error("Could not place order");
+    } finally { setPlacing(false); }
   };
+
+  if (!user) {
+    return (
+      <div className="container py-20 text-center">
+        <h1 className="font-display text-3xl font-bold mb-4">Sign in to checkout</h1>
+        <Button className="rounded-full" onClick={() => navigate("/login")}>Sign in</Button>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -40,8 +66,8 @@ const Checkout = () => {
           <section className="bg-card border border-border rounded-3xl p-6">
             <h3 className="font-display text-xl font-bold mb-4">Shipping details</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Full name" />
-              <Field label="Email" type="email" />
+              <Field label="Full name" defaultValue={user.name} />
+              <Field label="Email" type="email" defaultValue={user.email} />
               <Field label="Address" className="md:col-span-2" />
               <Field label="City" />
               <Field label="ZIP" />
@@ -54,10 +80,10 @@ const Checkout = () => {
             <h3 className="font-display text-xl font-bold mb-4">Payment method</h3>
             <div className="grid md:grid-cols-3 gap-3">
               {[
-                { id: "card", label: "Credit card", icon: CreditCard },
-                { id: "wallet", label: "Digital wallet", icon: Wallet },
-                { id: "bank", label: "Bank transfer", icon: Building2 },
-              ].map(o => (
+                { id: "cod" as const, label: "Cash on delivery", icon: Banknote },
+                { id: "card" as const, label: "Card", icon: CreditCard },
+                { id: "upi" as const, label: "UPI", icon: Smartphone },
+              ].map((o) => (
                 <button
                   type="button"
                   key={o.id}
@@ -71,29 +97,25 @@ const Checkout = () => {
                 </button>
               ))}
             </div>
-            {pay === "card" && (
-              <div className="mt-4 grid md:grid-cols-2 gap-4">
-                <Field label="Card number" className="md:col-span-2" />
-                <Field label="Expiry" placeholder="MM/YY" />
-                <Field label="CVV" />
-              </div>
-            )}
           </section>
         </div>
 
         <aside className="lg:sticky lg:top-24 self-start bg-card border border-border rounded-3xl p-6 space-y-4">
           <h3 className="font-display text-xl font-bold">Summary</h3>
           <div className="space-y-3 max-h-60 overflow-y-auto">
-            {items.map(i => (
-              <div key={i.product.id} className="flex gap-3 items-center text-sm">
-                <img src={i.product.image} alt="" className="size-12 rounded-lg object-cover" loading="lazy" />
-                <div className="flex-1 min-w-0">
-                  <p className="line-clamp-1 font-medium">{i.product.name}</p>
-                  <p className="text-xs text-muted-foreground">Qty {i.quantity}</p>
+            {items.map((i: CartItem) => {
+              if (!isProduct(i.product)) return null;
+              return (
+                <div key={i.product.id} className="flex gap-3 items-center text-sm">
+                  <img src={productImg(i.product.image)} alt="" className="size-12 rounded-lg object-cover" loading="lazy" />
+                  <div className="flex-1 min-w-0">
+                    <p className="line-clamp-1 font-medium">{i.product.name}</p>
+                    <p className="text-xs text-muted-foreground">Qty {i.quantity}</p>
+                  </div>
+                  <span className="font-medium">{formatPrice(toNumber(i.product.price) * i.quantity)}</span>
                 </div>
-                <span className="font-medium">{formatPrice(i.product.price * i.quantity)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="border-t border-border pt-4 space-y-1.5 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(sub)}</span></div>
@@ -104,19 +126,22 @@ const Checkout = () => {
             <span className="font-semibold">Total</span>
             <span className="font-display text-2xl font-bold text-primary">{formatPrice(total)}</span>
           </div>
-          <Button type="submit" size="lg" className="w-full rounded-full shadow-warm">Place order</Button>
+          <Button type="submit" size="lg" disabled={placing} className="w-full rounded-full shadow-warm">
+            {placing ? <><Loader2 className="size-4 mr-2 animate-spin" /> Placing…</> : "Place order"}
+          </Button>
         </aside>
       </form>
     </div>
   );
 };
 
-const Field = ({ label, type = "text", placeholder, className = "" }: { label: string; type?: string; placeholder?: string; className?: string }) => (
+const Field = ({ label, type = "text", placeholder, className = "", defaultValue }: { label: string; type?: string; placeholder?: string; className?: string; defaultValue?: string }) => (
   <div className={className}>
     <label className="text-sm font-medium mb-1.5 block">{label}</label>
     <input
       required
       type={type}
+      defaultValue={defaultValue}
       placeholder={placeholder}
       className="w-full h-11 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary"
     />

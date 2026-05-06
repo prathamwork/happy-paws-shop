@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { PawPrint } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/store/auth";
 import { toast } from "sonner";
 
 interface AuthFormProps {
@@ -17,11 +19,31 @@ const titles = {
 const AuthForm = ({ mode }: AuthFormProps) => {
   const t = titles[mode];
   const navigate = useNavigate();
+  const { login, signup, loading } = useAuth();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(mode === "forgot" ? "Reset link sent (demo)" : "Welcome to Pawsome! 🐾");
-    if (mode !== "forgot") navigate("/");
+    try {
+      if (mode === "login") {
+        await login(email, password);
+        toast.success("Welcome back! 🐾");
+        navigate("/");
+      } else if (mode === "register") {
+        await signup(name, email, password);
+        toast.success("Welcome to Pawsome! 🐾");
+        navigate("/");
+      } else {
+        toast.success("Reset link sent (demo)");
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string; detail?: string } } })?.response?.data?.message
+        ?? (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        ?? "Something went wrong";
+      toast.error(msg);
+    }
   };
 
   return (
@@ -44,22 +66,31 @@ const AuthForm = ({ mode }: AuthFormProps) => {
           {mode === "register" && (
             <div>
               <label className="text-sm font-medium mb-1.5 block">Full name</label>
-              <input required className="w-full h-12 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary" />
+              <input
+                required value={name} onChange={(e) => setName(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary"
+              />
             </div>
           )}
           <div>
             <label className="text-sm font-medium mb-1.5 block">Email</label>
-            <input required type="email" className="w-full h-12 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary" />
+            <input
+              required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
           {mode !== "forgot" && (
             <div>
               <label className="text-sm font-medium mb-1.5 block">Password</label>
-              <input required type="password" className="w-full h-12 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary" />
+              <input
+                required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full h-12 px-4 rounded-xl bg-muted border-0 outline-none focus:ring-2 focus:ring-primary"
+              />
             </div>
           )}
 
-          <Button type="submit" size="lg" className="w-full rounded-full shadow-warm mt-2">
-            {mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Send reset link"}
+          <Button type="submit" size="lg" disabled={loading} className="w-full rounded-full shadow-warm mt-2">
+            {loading ? "Please wait…" : mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Send reset link"}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground pt-2">
