@@ -53,8 +53,26 @@ export interface Product {
 
 export interface CartItem {
   id: number;
-  product: Product | number;
+  product: number;
+  product_name: string;
+  product_image: string;
   quantity: number;
+  price_at_time: string;
+  subtotal: number;
+}
+
+export interface CartResponse {
+  id: number;
+  user: number;
+  items: CartItem[];
+  total_items: number;
+  created_at: string;
+}
+
+export interface CartApiResponse {
+  success: boolean;
+  cart: CartResponse;  
+  total_price: number;
 }
 
 export interface WishlistItem {

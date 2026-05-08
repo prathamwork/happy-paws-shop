@@ -21,43 +21,51 @@ interface CartState {
   subtotal: () => number;
 }
 
-const productId = (i: CartItem): number =>
-  typeof i.product === "object" ? i.product.id : (i.product as number);
-
-const productPrice = (i: CartItem): number =>
-  typeof i.product === "object" ? toNumber(i.product.price) : 0;
+const productPrice = (i: CartItem): number => toNumber(i.price_at_time);
 
 export const useCart = create<CartState>((set, get) => ({
   items: [],
   loading: false,
-  fetch: async () => {
-    set({ loading: true });
-    try {
-      const items = await apiList();
-      set({ items: Array.isArray(items) ? items : [] });
-    } catch {
-      set({ items: [] });
-    } finally {
-      set({ loading: false });
-    }
-  },
+
+fetch: async () => {
+  set({ loading: true });
+  try {
+    const raw = await apiList() as unknown as {
+      cart?: { items: CartItem[] };
+      items?: CartItem[];
+    };
+    // Handle both { cart: { items } } and { items } shapes
+    const items: CartItem[] = raw?.cart?.items ?? (raw as any)?.items ?? [];
+    set({ items });
+  } catch {
+    set({ items: [] });
+  } finally {
+    set({ loading: false });
+  }
+},
+
   add: async (product, qty = 1) => {
-    await apiAdd({ product: product.id, quantity: qty });
+    await apiAdd({ product_id: product.id, quantity: qty });
     await get().fetch();
   },
+
   setQty: async (pid, qty) => {
     if (qty <= 0) return get().remove(pid);
-    await apiUpdate({ product: pid, quantity: qty });
+    await apiUpdate({ product_id: pid, quantity: qty });
     await get().fetch();
   },
+
   remove: async (pid) => {
     await apiRemove(pid);
-    set({ items: get().items.filter((i) => productId(i) !== pid) });
+    set({ items: get().items.filter((i) => i.product !== pid) });
   },
+
   clear: async () => {
     await apiClear();
     set({ items: [] });
   },
+
   totalItems: () => get().items.reduce((s, i) => s + i.quantity, 0),
-  subtotal: () => get().items.reduce((s, i) => s + i.quantity * productPrice(i), 0),
+  subtotal: () =>
+    get().items.reduce((s, i) => s + i.quantity * productPrice(i), 0),
 }));

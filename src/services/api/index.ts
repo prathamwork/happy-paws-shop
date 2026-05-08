@@ -11,6 +11,7 @@ import type {
   AuthResponse,
   AuthTokens,
   CartItem,
+  CartResponse, 
   Category,
   Order,
   OrderStatus,
@@ -75,10 +76,47 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ── Silent token refresh ─────────────────────────────
+let _refreshPromise: Promise<AuthTokens> | null = null;
+
+async function silentRefresh(): Promise<AuthTokens> {
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    const refresh = tokenStore.getRefresh();
+    if (!refresh) throw new Error("No refresh token");
+    // Use raw axios to avoid interceptor loop
+    const res = await axios.post<ApiEnvelope<AuthTokens>>(
+      `${API_BASE_URL}/users/refresh/`,
+      { refresh },
+      { headers: { "Content-Type": "application/json" } },
+    );
+    const body = res.data;
+    const tokens = "data" in body ? body.data : (body as unknown as AuthTokens);
+    tokenStore.set(tokens); // saves new access (+ refresh if rotated)
+    return tokens;
+  })().finally(() => { _refreshPromise = null; });
+
+  return _refreshPromise;
+}
+
 api.interceptors.response.use(
   (res) => res,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) tokenStore.clear();
+  async (error: AxiosError) => {
+    const original = error.config as typeof error.config & { _retry?: boolean };
+    if (error.response?.status === 401 && !original?._retry) {
+      original!._retry = true;
+      try {
+        const tokens = await silentRefresh();
+        const headers = AxiosHeaders.from(original!.headers);
+        headers.set("Authorization", `Bearer ${tokens.access}`);
+        original!.headers = headers;
+        return api(original!); // replay with new token
+      } catch {
+        tokenStore.clear();
+        window.location.href = "/login";
+      }
+    }
     return Promise.reject(error);
   },
 );
@@ -113,7 +151,7 @@ export const getProfile = () => unwrap<User>(api.get("/users/profile/"));
 export const getWishlist = () => unwrap<WishlistItem[]>(api.get("/users/wishlist/"));
 
 export const addToWishlist = (productId: number | string) =>
-  unwrap<WishlistItem>(api.post("/users/wishlist/add/", { product: productId }));
+  unwrap<WishlistItem>(api.post("/users/wishlist/add/", { product_id: productId }));
 
 export const removeFromWishlist = (productId: number | string) =>
   unwrap<{ success: boolean }>(api.delete(`/users/wishlist/remove/${productId}/`));
@@ -164,16 +202,21 @@ export const getCategoryProducts = (slug: string) =>
 // ---------------------------------------------------------------------------
 // CART
 // ---------------------------------------------------------------------------
-export const getCart = () => unwrap<CartItem[]>(api.get("/cart/"));
+export const getCart = () =>
+  api.get("/cart/").then((res) => {
+    const body = res.data;
+    // Backend returns { success, cart: { items, ... }, total_price }
+    return (body?.cart ?? body?.data ?? body) as CartResponse;
+  });
 
-export const addToCart = (data: { product: number | string; quantity: number }) =>
+export const addToCart = (data: { product_id: number | string; quantity: number }) =>
   unwrap<CartItem>(api.post("/cart/add/", data));
 
-export const updateCart = (data: { product: number | string; quantity: number }) =>
+export const updateCart = (data: { product_id: number | string; quantity: number }) =>
   unwrap<CartItem>(api.patch("/cart/update/", data));
 
-export const removeCartItem = (productId: number | string) =>
-  unwrap<{ success: boolean }>(api.delete(`/cart/remove/${productId}/`));
+export const removeCartItem = (product_id: number | string) =>
+  unwrap<{ success: boolean }>(api.delete(`/cart/remove/${product_id}/`));
 
 export const clearCart = () =>
   unwrap<{ success: boolean }>(api.delete("/cart/clear/"));

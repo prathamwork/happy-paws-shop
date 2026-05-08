@@ -13,7 +13,7 @@ const Shop = () => {
   const [params, setParams] = useSearchParams();
   const slug = params.get("cat") ?? "all";
   const q = params.get("q") ?? "";
-  const [maxPrice, setMaxPrice] = useState(500);
+  const [maxPrice, setMaxPrice] = useState(50000);
   const [minRating, setMinRating] = useState(0);
   const [sort, setSort] = useState<"newest" | "price-asc" | "price-desc" | "rating">("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);

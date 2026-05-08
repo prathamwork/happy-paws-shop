@@ -5,11 +5,8 @@ import { Loader2, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/store/cart";
 import { useAuth } from "@/store/auth";
 import { Button } from "@/components/ui/button";
-import { formatPrice, toNumber } from "@/lib/format";
-import { productImg } from "@/lib/img";
-import type { CartItem, Product } from "@/types/api";
-
-const isProduct = (p: number | Product): p is Product => typeof p === "object";
+import { formatPrice } from "@/lib/format";
+import type { CartItem } from "@/types/api";
 
 const Cart = () => {
   const { items, loading, fetch, setQty, remove, subtotal } = useCart();
@@ -52,54 +49,66 @@ const Cart = () => {
     );
   }
 
-  const renderItem = (item: CartItem, i: number) => {
-    if (!isProduct(item.product)) return null;
-    const p = item.product;
-    return (
-      <motion.div
-        key={p.id}
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: i * 0.05 }}
-        className="bg-card border border-border rounded-3xl p-4 flex gap-4 items-center"
-      >
-        <Link to={`/product/${p.id}`} className="shrink-0">
-          <img
-            src={productImg(p.image)}
-            alt={p.name}
-            className="size-24 md:size-28 object-cover rounded-2xl bg-muted"
-            loading="lazy"
-          />
+  const renderItem = (item: CartItem, i: number) => (
+    <motion.div
+      key={item.id}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: i * 0.05 }}
+      className="bg-card border border-border rounded-3xl p-4 flex gap-4 items-center"
+    >
+      <Link to={`/product/${item.product}`} className="shrink-0">
+        <img
+          src={item.product_image}
+          alt={item.product_name}
+          className="size-24 md:size-28 object-cover rounded-2xl bg-muted"
+          loading="lazy"
+        />
+      </Link>
+
+      <div className="flex-1 min-w-0">
+        <Link to={`/product/${item.product}`}>
+          <h3 className="font-medium line-clamp-2 hover:text-primary transition">
+            {item.product_name}
+          </h3>
         </Link>
-        <div className="flex-1 min-w-0">
-          <Link to={`/product/${p.id}`}>
-            <h3 className="font-medium line-clamp-2 hover:text-primary transition">{p.name}</h3>
-          </Link>
-          <p className="font-display text-lg font-bold text-primary mt-1">{formatPrice(p.price)}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Subtotal: {formatPrice(toNumber(p.price) * item.quantity)}
-          </p>
+        <p className="font-display text-lg font-bold text-primary mt-1">
+          {formatPrice(item.price_at_time)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Subtotal: {formatPrice(item.subtotal)}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-end gap-3">
+        <div className="flex items-center bg-muted rounded-full">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8 rounded-full"
+            onClick={() => setQty(item.product, item.quantity - 1)}
+          >
+            <Minus className="size-3" />
+          </Button>
+          <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8 rounded-full"
+            onClick={() => setQty(item.product, item.quantity + 1)}
+          >
+            <Plus className="size-3" />
+          </Button>
         </div>
-        <div className="flex flex-col items-end gap-3">
-          <div className="flex items-center bg-muted rounded-full">
-            <Button size="icon" variant="ghost" className="size-8 rounded-full"
-              onClick={() => setQty(p.id, item.quantity - 1)}>
-              <Minus className="size-3" />
-            </Button>
-            <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
-            <Button size="icon" variant="ghost" className="size-8 rounded-full"
-              onClick={() => setQty(p.id, item.quantity + 1)}>
-              <Plus className="size-3" />
-            </Button>
-          </div>
-          <button onClick={() => remove(p.id)}
-            className="text-muted-foreground hover:text-destructive transition text-xs flex items-center gap-1">
-            <Trash2 className="size-3" /> Remove
-          </button>
-        </div>
-      </motion.div>
-    );
-  };
+        <button
+          onClick={() => remove(item.product)}
+          className="text-muted-foreground hover:text-destructive transition text-xs flex items-center gap-1"
+        >
+          <Trash2 className="size-3" /> Remove
+        </button>
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className="container py-10 md:py-14">
@@ -110,8 +119,14 @@ const Cart = () => {
         <aside className="lg:sticky lg:top-24 self-start bg-card border border-border rounded-3xl p-6 space-y-4">
           <h3 className="font-display text-xl font-bold">Order summary</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">{formatPrice(sub)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Tax (8%)</span><span className="font-medium">{formatPrice(tax)}</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-medium">{formatPrice(sub)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Tax (8%)</span>
+              <span className="font-medium">{formatPrice(tax)}</span>
+            </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
               <span className="font-medium">{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
@@ -121,7 +136,9 @@ const Cart = () => {
             <span className="font-display text-lg font-semibold">Total</span>
             <span className="font-display text-2xl font-bold text-primary">{formatPrice(total)}</span>
           </div>
-          <Link to="/checkout"><Button size="lg" className="w-full rounded-full shadow-warm">Checkout</Button></Link>
+          <Link to="/checkout">
+            <Button size="lg" className="w-full rounded-full shadow-warm">Checkout</Button>
+          </Link>
           <Link to="/shop" className="block text-center text-sm text-muted-foreground hover:text-foreground transition">
             Continue shopping
           </Link>
