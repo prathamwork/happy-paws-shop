@@ -11,6 +11,13 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface ProfileData {
+  name: string;
+  email: string;
+}
+
 interface StoreSettings {
   site_name: string;
   support_email: string;
@@ -21,6 +28,8 @@ interface StoreSettings {
   logo: string | null;
 }
 
+// ── Auth header helper ────────────────────────────────────────────────────────
+
 function authHeaders(): HeadersInit {
   const token = localStorage.getItem("pawsome-access-token");
   return {
@@ -29,64 +38,164 @@ function authHeaders(): HeadersInit {
   };
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function AdminSettings() {
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  // Profile
+  const [profile, setProfile] = useState<ProfileData>({ name: "", email: "" });
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
 
-  const [profile, setProfile] = useState({ name: "Admin", email: "admin@pawsome.shop" });
+  // Password
   const [pwd, setPwd] = useState({ current: "", next: "", confirm: "" });
+  const [pwdSaving, setPwdSaving] = useState(false);
 
-  // ── Fetch settings on mount ──────────────────────────────────────────────
+  // Store
+  const [store, setStore] = useState<StoreSettings | null>(null);
+  const [storeLoading, setStoreLoading] = useState(true);
+  const [storeSaving, setStoreSaving] = useState(false);
+
+  // ── GET /admin/settings/profile/ ─────────────────────────────────────────
   useEffect(() => {
-    const fetchSettings = async () => {
-      setLoading(true);
+    (async () => {
+      setProfileLoading(true);
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/admin/settings/`,
+          `${import.meta.env.VITE_API_BASE_URL}/admin/settings/profile/`,
           { headers: authHeaders() }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
-        if (!json.success) throw new Error("API returned success: false");
-        setSettings(json.data);
+        if (!json.success) throw new Error("API error");
+        setProfile(json.data);
       } catch (err) {
-        toast.error(`Failed to load settings: ${err instanceof Error ? err.message : "Unknown error"}`);
+        toast.error(`Failed to load profile: ${err instanceof Error ? err.message : "Unknown error"}`);
       } finally {
-        setLoading(false);
+        setProfileLoading(false);
       }
-    };
-
-    fetchSettings();
+    })();
   }, []);
 
-  // ── Save store settings ──────────────────────────────────────────────────
-  const saveSettings = async () => {
-    if (!settings) return;
-    setSaving(true);
+  // ── GET /admin/settings/store/ ───────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      setStoreLoading(true);
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/admin/settings/store/`,
+          { headers: authHeaders() }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!json.success) throw new Error("API error");
+        setStore(json.data);
+      } catch (err) {
+        toast.error(`Failed to load store settings: ${err instanceof Error ? err.message : "Unknown error"}`);
+      } finally {
+        setStoreLoading(false);
+      }
+    })();
+  }, []);
+
+  // ── PATCH /admin/settings/profile/ ───────────────────────────────────────
+  const saveProfile = async () => {
+    setProfileSaving(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/admin/settings/`,
+        `${import.meta.env.VITE_API_BASE_URL}/admin/settings/profile/`,
         {
           method: "PATCH",
           headers: authHeaders(),
-          body: JSON.stringify(settings),
+          body: JSON.stringify({ name: profile.name, email: profile.email }),
         }
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      if (!json.success) throw new Error("API returned success: false");
-      toast.success("Store settings saved");
+      if (!json.success) throw new Error(json.message ?? "Failed to save");
+      setProfile(json.data);
+      toast.success(json.message ?? "Profile updated successfully");
     } catch (err) {
-      toast.error(`Failed to save: ${err instanceof Error ? err.message : "Unknown error"}`);
+      toast.error(err instanceof Error ? err.message : "Unknown error");
     } finally {
-      setSaving(false);
+      setProfileSaving(false);
     }
   };
 
-  const updateSettings = (patch: Partial<StoreSettings>) =>
-    setSettings((prev) => (prev ? { ...prev, ...patch } : prev));
+  // ── PATCH /admin/settings/password/ ──────────────────────────────────────
+  const savePassword = async () => {
+    if (!pwd.current) {
+      toast.error("Please enter your current password");
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/settings/password/`,
+        {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            current_password: pwd.current,
+            new_password: pwd.next,
+            confirm_password: pwd.confirm,
+          }),
+        }
+      );
+      const json = await res.json();
+      if (!json.success) {
+        // message can be a string or an array of validation strings
+        const msg = Array.isArray(json.message)
+          ? json.message.join(" ")
+          : (json.message ?? "Failed to update password");
+        toast.error(msg);
+        return;
+      }
+      toast.success(json.message ?? "Password updated successfully");
+      setPwd({ current: "", next: "", confirm: "" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
+  // ── PATCH /admin/settings/store/ ─────────────────────────────────────────
+  const saveStore = async () => {
+    if (!store) return;
+    setStoreSaving(true);
+    try {
+      const { logo: _logo, ...body } = store; // logo is read-only, omit from request
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/admin/settings/store/`,
+        {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify(body),
+        }
+      );
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message ?? "Failed to save");
+      setStore(json.data);
+      toast.success(json.message ?? "Store settings updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setStoreSaving(false);
+    }
+  };
+
+  const updateStore = (patch: Partial<StoreSettings>) =>
+    setStore((prev) => (prev ? { ...prev, ...patch } : prev));
+
+  // ── Skeleton ──────────────────────────────────────────────────────────────
+  const Skeleton = ({ count = 2 }: { count?: number }) => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="h-10 rounded-md bg-muted/40 animate-pulse" />
+      ))}
+    </div>
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5 max-w-3xl">
       <div>
@@ -101,33 +210,41 @@ export default function AdminSettings() {
           <TabsTrigger value="store">Store</TabsTrigger>
         </TabsList>
 
-        {/* ── Profile Tab ─────────────────────────────────────────────────── */}
+        {/* ── Profile ──────────────────────────────────────────────────────── */}
         <TabsContent value="profile">
           <Card className="p-5 shadow-card space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Name</Label>
-                <Input
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={() => toast.success("Profile saved")}>Save</Button>
-            </div>
+            {profileLoading ? (
+              <Skeleton count={2} />
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Name</Label>
+                    <Input
+                      value={profile.name}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={profile.email}
+                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={saveProfile} disabled={profileSaving}>
+                    {profileSaving ? "Saving…" : "Save"}
+                  </Button>
+                </div>
+              </>
+            )}
           </Card>
         </TabsContent>
 
-        {/* ── Password Tab ─────────────────────────────────────────────────── */}
+        {/* ── Password ─────────────────────────────────────────────────────── */}
         <TabsContent value="password">
           <Card className="p-5 shadow-card space-y-4">
             <div className="space-y-1.5">
@@ -157,54 +274,41 @@ export default function AdminSettings() {
               </div>
             </div>
             <div className="flex justify-end">
-              <Button
-                onClick={() => {
-                  if (!pwd.next || pwd.next !== pwd.confirm) {
-                    toast.error("Passwords do not match");
-                    return;
-                  }
-                  toast.success("Password updated");
-                  setPwd({ current: "", next: "", confirm: "" });
-                }}
-              >
-                Update password
+              <Button onClick={savePassword} disabled={pwdSaving}>
+                {pwdSaving ? "Updating…" : "Update password"}
               </Button>
             </div>
           </Card>
         </TabsContent>
 
-        {/* ── Store Tab ────────────────────────────────────────────────────── */}
+        {/* ── Store ────────────────────────────────────────────────────────── */}
         <TabsContent value="store">
           <Card className="p-5 shadow-card space-y-4">
-            {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-10 rounded-md bg-muted/40 animate-pulse" />
-                ))}
-              </div>
-            ) : settings ? (
+            {storeLoading ? (
+              <Skeleton count={6} />
+            ) : store ? (
               <>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Site name</Label>
                     <Input
-                      value={settings.site_name}
-                      onChange={(e) => updateSettings({ site_name: e.target.value })}
+                      value={store.site_name}
+                      onChange={(e) => updateStore({ site_name: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Support email</Label>
                     <Input
                       type="email"
-                      value={settings.support_email}
-                      onChange={(e) => updateSettings({ support_email: e.target.value })}
+                      value={store.support_email}
+                      onChange={(e) => updateStore({ support_email: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Currency</Label>
                     <Select
-                      value={settings.currency}
-                      onValueChange={(v) => updateSettings({ currency: v })}
+                      value={store.currency}
+                      onValueChange={(v) => updateStore({ currency: v })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -221,8 +325,8 @@ export default function AdminSettings() {
                       type="number"
                       min={0}
                       step={0.01}
-                      value={settings.tax_percentage}
-                      onChange={(e) => updateSettings({ tax_percentage: parseFloat(e.target.value) || 0 })}
+                      value={store.tax_percentage}
+                      onChange={(e) => updateStore({ tax_percentage: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -231,15 +335,15 @@ export default function AdminSettings() {
                       type="number"
                       min={0}
                       step={0.01}
-                      value={settings.shipping_charge}
-                      onChange={(e) => updateSettings({ shipping_charge: parseFloat(e.target.value) || 0 })}
+                      value={store.shipping_charge}
+                      onChange={(e) => updateStore({ shipping_charge: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Maintenance mode</Label>
                     <Select
-                      value={settings.maintenance_mode ? "true" : "false"}
-                      onValueChange={(v) => updateSettings({ maintenance_mode: v === "true" })}
+                      value={store.maintenance_mode ? "true" : "false"}
+                      onValueChange={(v) => updateStore({ maintenance_mode: v === "true" })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -249,9 +353,22 @@ export default function AdminSettings() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Logo preview — read-only */}
+                {store.logo && (
+                  <div className="space-y-1.5">
+                    <Label>Logo</Label>
+                    <img
+                      src={store.logo}
+                      alt="Store logo"
+                      className="h-12 w-auto rounded-md object-contain border border-border p-1"
+                    />
+                  </div>
+                )}
+
                 <div className="flex justify-end">
-                  <Button onClick={saveSettings} disabled={saving}>
-                    {saving ? "Saving…" : "Save"}
+                  <Button onClick={saveStore} disabled={storeSaving}>
+                    {storeSaving ? "Saving…" : "Save"}
                   </Button>
                 </div>
               </>

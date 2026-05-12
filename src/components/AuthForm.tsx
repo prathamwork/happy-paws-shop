@@ -39,9 +39,8 @@ const AuthForm = ({ mode }: AuthFormProps) => {
         toast.success("Reset link sent (demo)");
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string; detail?: string } } })?.response?.data?.message
-        ?? (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-        ?? "Something went wrong";
+      const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
+      const msg = data?.message ?? data?.detail ?? data?.error ?? "Something went wrong";
       toast.error(msg);
     }
   };

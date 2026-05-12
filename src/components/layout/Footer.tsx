@@ -35,11 +35,11 @@ const Footer = () => {
           <div>
             <h4 className="font-display text-lg font-semibold mb-4">Shop</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/shop?cat=dogs" className="hover:text-primary transition">Dog supplies</Link></li>
-              <li><Link to="/shop?cat=cats" className="hover:text-primary transition">Cat essentials</Link></li>
+              <li><Link to="/shop?cat=dogs" className="hover:text-primary transition">Dogs</Link></li>
+              <li><Link to="/shop?cat=cats" className="hover:text-primary transition">Cats</Link></li>
               <li><Link to="/shop?cat=birds" className="hover:text-primary transition">Birds</Link></li>
-              <li><Link to="/shop?cat=fish" className="hover:text-primary transition">Aquatic</Link></li>
-              <li><Link to="/shop?cat=accessories" className="hover:text-primary transition">Accessories</Link></li>
+              <li><Link to="/shop?cat=fish" className="hover:text-primary transition">Fish</Link></li>
+              {/* <li><Link to="/shop?cat=accessories" className="hover:text-primary transition">Accessories</Link></li> */}
             </ul>
           </div>
 
@@ -47,10 +47,10 @@ const Footer = () => {
             <h4 className="font-display text-lg font-semibold mb-4">Help</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/about" className="hover:text-primary transition">About us</Link></li>
-              <li><Link to="/contact" className="hover:text-primary transition">Contact</Link></li>
+              {/* <li><Link to="/contact" className="hover:text-primary transition">Contact</Link></li>
               <li><a href="#" className="hover:text-primary transition">Shipping</a></li>
               <li><a href="#" className="hover:text-primary transition">Returns</a></li>
-              <li><a href="#" className="hover:text-primary transition">FAQ</a></li>
+              <li><a href="#" className="hover:text-primary transition">FAQ</a></li> */}
             </ul>
           </div>
 

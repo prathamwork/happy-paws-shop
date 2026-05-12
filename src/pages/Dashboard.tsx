@@ -35,6 +35,19 @@ const statusStyles: Record<string, string> = {
   cancelled: "bg-destructive/10 text-destructive",
 };
 
+const EMPTY_ADDR = {
+  full_name: "",
+  phone: "",
+  email: "",
+  address: "",
+  address_line2: "",
+  city: "",
+  state: "",
+  zip_code: "",
+  country: "India",
+  is_default: false,
+};
+
 const Dashboard = () => {
   const [tab, setTab] = useState("profile");
   const user = useAuth((s) => s.user);
@@ -45,18 +58,9 @@ const Dashboard = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newAddr, setNewAddr] = useState({
-    full_name: "",
-    phone: "",
-    email: "",
-    address: "", // was address_line1
-    address_line2: "",
-    city: "",
-    state: "",
-    zip_code: "", // was pincode
-    country: "India",
-    is_default: false,
-  });
+  const [savingAddr, setSavingAddr] = useState(false);
+  const [addrError, setAddrError] = useState<string | null>(null);
+  const [newAddr, setNewAddr] = useState(EMPTY_ADDR);
 
   useEffect(() => {
     if (!user) return;
@@ -71,7 +75,7 @@ const Dashboard = () => {
         const list = Array.isArray(data)
           ? data
           : ((data as any)?.orders ?? (data as any)?.results ?? []);
-        setOrders(list); // ✅ yeh line missing thi!
+        setOrders(list);
       })
       .catch(() => setOrders([]))
       .finally(() => setLoadingOrders(false));
@@ -108,24 +112,25 @@ const Dashboard = () => {
   }, [user]);
 
   const handleAddAddress = async () => {
+    setSavingAddr(true);
+    setAddrError(null);
     try {
       const created = await addAddress(newAddr);
+      if (!created || typeof created !== "object") {
+        throw new Error("Invalid response from server");
+      }
       setAddresses((prev) => [...prev, created]);
       setShowAddForm(false);
-      setNewAddr({
-        full_name: "",
-        phone: "",
-        email: "",
-        address: "",
-        address_line2: "",
-        city: "",
-        state: "",
-        zip_code: "",
-        country: "India",
-        is_default: false,
-      });
-    } catch (err) {
+      setNewAddr(EMPTY_ADDR);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail ??
+        err?.message ??
+        "Failed to save address. Please try again.";
+      setAddrError(msg);
       console.error("Address add error:", err);
+    } finally {
+      setSavingAddr(false);
     }
   };
 
@@ -316,7 +321,10 @@ const Dashboard = () => {
                   Saved addresses
                 </h2>
                 <button
-                  onClick={() => setShowAddForm((v) => !v)}
+                  onClick={() => {
+                    setShowAddForm((v) => !v);
+                    setAddrError(null);
+                  }}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
                 >
                   <Plus className="size-4" />
@@ -333,14 +341,11 @@ const Dashboard = () => {
                       { key: "full_name", placeholder: "Full name" },
                       { key: "phone", placeholder: "Phone number" },
                       { key: "email", placeholder: "Email" },
-                      { key: "address", placeholder: "Address" }, // was address_line1
-                      {
-                        key: "address_line2",
-                        placeholder: "Address line 2 (optional)",
-                      },
+                      { key: "address", placeholder: "Address" },
+                      { key: "address_line2", placeholder: "Address line 2 (optional)" },
                       { key: "city", placeholder: "City" },
                       { key: "state", placeholder: "State" },
-                      { key: "zip_code", placeholder: "Zip / Pincode" }, // was pincode
+                      { key: "zip_code", placeholder: "Zip / Pincode" },
                       { key: "country", placeholder: "Country" },
                     ].map(({ key, placeholder }) => (
                       <input
@@ -368,15 +373,25 @@ const Dashboard = () => {
                     />
                     Set as default address
                   </label>
+
+                  {/* Error message */}
+                  {addrError && (
+                    <p className="text-sm text-destructive">{addrError}</p>
+                  )}
+
                   <div className="flex gap-2">
                     <button
                       onClick={handleAddAddress}
-                      className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+                      disabled={savingAddr}
+                      className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Save address
+                      {savingAddr ? "Saving…" : "Save address"}
                     </button>
                     <button
-                      onClick={() => setShowAddForm(false)}
+                      onClick={() => {
+                        setShowAddForm(false);
+                        setAddrError(null);
+                      }}
                       className="px-4 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted"
                     >
                       Cancel

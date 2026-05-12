@@ -135,7 +135,7 @@ export default function AdminUsers() {
     setDeleteTarget(null);
 
     try {
-      await api.delete(`/admin/users/${deleteTarget.id}/`);
+      await api.delete(`/users/deleteuser/${deleteTarget.id}/`);
       toast.success(`${deleteTarget.name} has been deleted`);
     } catch {
       // Rollback

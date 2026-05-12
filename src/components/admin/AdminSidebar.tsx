@@ -6,7 +6,6 @@ import {
   Tags,
   Star,
   BarChart3,
-  Ticket,
   Settings,
   PawPrint,
 } from "lucide-react";
@@ -23,25 +22,30 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/store/auth";
 
-const main = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true },
-  { title: "Products", url: "/admin/products", icon: Package },
-  { title: "Orders", url: "/admin/orders", icon: ShoppingCart },
-  { title: "Users", url: "/admin/users", icon: Users },
-  { title: "Categories", url: "/admin/categories", icon: Tags },
-  { title: "Reviews", url: "/admin/reviews", icon: Star },
+const allMain = [
+  { title: "Dashboard", url: "/admin", icon: LayoutDashboard, end: true, roles: ["admin"] },
+  { title: "Products", url: "/admin/products", icon: Package, roles: ["admin", "manager"] },
+  { title: "Orders", url: "/admin/orders", icon: ShoppingCart, roles: ["admin"] },
+  { title: "Users", url: "/admin/users", icon: Users, roles: ["admin"] },
+  { title: "Categories", url: "/admin/categories", icon: Tags, roles: ["admin", "manager"] },
+  { title: "Reviews", url: "/admin/reviews", icon: Star, roles: ["admin"] },
 ];
 
-const insights = [
-  { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-  { title: "Coupons", url: "/admin/coupons", icon: Ticket },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+const allInsights = [
+  { title: "Analytics", url: "/admin/analytics", icon: BarChart3, roles: ["admin"] },
+  { title: "Settings", url: "/admin/settings", icon: Settings, roles: ["admin", "manager"] },
 ];
 
 export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { user } = useAuth();
+  const role = user?.role ?? "";
+
+  const main = allMain.filter((item) => item.roles.includes(role));
+  const insights = allInsights.filter((item) => item.roles.includes(role));
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -83,27 +87,29 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Insights</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {insights.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/60"
-                      activeClassName="bg-primary/10 text-primary font-semibold"
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {insights.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Insights</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {insights.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted/60"
+                        activeClassName="bg-primary/10 text-primary font-semibold"
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );
