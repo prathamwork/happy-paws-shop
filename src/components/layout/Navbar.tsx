@@ -35,10 +35,10 @@ const Navbar = () => {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+  useEffect(() => { fetchProfile(); }, []);
   useEffect(() => {
     if (user) { fetchCart(); fetchWish(); }
-  }, [user, fetchCart, fetchWish]);
+  }, []);
 
   useEffect(() => {
     if (q.length === 0) { setSuggestions([]); return; }
