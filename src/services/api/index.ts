@@ -248,3 +248,37 @@ export default {
   getCart, addToCart, updateCart, removeCartItem, clearCart,
   createOrder, getOrders, getOrderById, cancelOrder, updateOrderStatus,
 };
+
+
+// ---------------------------------------------------------------------------
+// ADDRESSES
+// ---------------------------------------------------------------------------
+export interface Address {
+  id: number;
+  user: number;
+  full_name: string;
+  phone: string;
+  email?: string;          // backend has this
+  address: string;         // was address_line1
+  address_line2?: string;  // keep optional if backend supports it
+  city: string;
+  state: string;
+  zip_code: string;        // was pincode
+  country?: string;        // backend has this
+  is_default: boolean;
+  created_at: string;
+  address_ref?: string | null;
+}
+
+export const getAddresses = () =>
+  unwrap<Address[]>(api.get("/orders/addresses/"));
+
+export const addAddress = (data: Omit<Address, "id" | "user" | "created_at">) =>
+  unwrap<Address>(api.post("/orders/addresses/", data));
+
+export const updateAddress = (id: number | string, data: Partial<Address>) =>
+  unwrap<Address>(api.patch(`/orders/addresses/${id}/`, data));
+
+export const deleteAddress = (id: number | string) =>
+  unwrap<{ success: boolean }>(api.delete(`/orders/addresses/${id}/`));
+

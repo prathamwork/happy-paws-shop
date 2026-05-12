@@ -6,7 +6,7 @@ import hero from "@/assets/hero-pets.jpg";
 
 const Hero = () => (
   <section className="relative overflow-hidden bg-gradient-warm">
-    <div className="container relative grid lg:grid-cols-2 items-center gap-10 py-16 md:py-24 lg:py-32">
+    <div className="container relative grid lg:grid-cols-2 items-center gap-10 py-16 md:py-24 lg:py-5">
       <motion.div
         initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
@@ -30,11 +30,11 @@ const Hero = () => (
               Shop now <ArrowRight className="ml-1 size-4" />
             </Button>
           </Link>
-          <Link to="/shop?cat=dogs">
+          {/* <Link to="/shop?cat=dogs">
             <Button size="lg" variant="outline" className="rounded-full text-base h-12 px-7 bg-background/60 backdrop-blur">
               Explore deals
             </Button>
-          </Link>
+          </Link> */}
         </div>
 
         <div className="mt-10 flex flex-wrap gap-6 text-sm">
@@ -42,7 +42,7 @@ const Hero = () => (
             <div className="size-9 rounded-full bg-background/80 grid place-items-center">
               <Truck className="size-4 text-primary" />
             </div>
-            <span>Free shipping over $49</span>
+            <span>Free shipping over ₹49</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="size-9 rounded-full bg-background/80 grid place-items-center">

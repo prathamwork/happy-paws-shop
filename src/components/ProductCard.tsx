@@ -72,14 +72,14 @@ const ProductCard = ({ product, index = 0 }: Props) => {
     >
       <Link to={`/product/${product.id}`} className="group block">
         <div className="relative bg-card rounded-3xl overflow-hidden shadow-card hover:shadow-float transition-all duration-500 border border-border/60">
-          <div className="relative aspect-square bg-gradient-warm overflow-hidden">
+          <div className="relative w-full aspect-square bg-gradient-warm overflow-hidden">
             <img
               src={productImg(product.image)}
               alt={product.name}
               loading="lazy"
               width={800}
               height={800}
-              className="size-full object-cover group-hover:scale-110 transition-transform duration-700"
+              className="absolute inset-0 h-full w-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
             />
             {outOfStock && (
               <span className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-bold px-3 py-1 rounded-full">

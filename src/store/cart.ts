@@ -35,6 +35,7 @@ fetch: async () => {
       items?: CartItem[];
     };
     // Handle both { cart: { items } } and { items } shapes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items: CartItem[] = raw?.cart?.items ?? (raw as any)?.items ?? [];
     set({ items });
   } catch {

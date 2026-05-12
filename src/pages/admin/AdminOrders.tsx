@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, Search } from "lucide-react";
 import { motion } from "framer-motion";
@@ -11,19 +11,59 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useAdmin } from "@/store/admin";
 import { StatusPill } from "@/components/admin/StatusPill";
 import { formatPrice } from "@/lib/format";
-import type { OrderStatus } from "@/data/admin";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+
+interface AdminOrder {
+  id: number;
+  order_id: string;
+  customer: string;
+  email: string;
+  date: string;
+  status: string;
+  payment: string;
+  amount: number;
+}
 
 export default function AdminOrders() {
-  const { orders, setOrderStatus } = useAdmin();
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<string>("all");
+  const [status, setStatus] = useState("all");
+
+  useEffect(() => {
+    api
+      .get("/admin/orders/")
+      .then((res) => {
+        const data = res.data?.data ?? res.data;
+        setOrders(Array.isArray(data) ? data : []);
+      })
+      .catch(() => toast.error("Failed to load orders"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleStatusChange = async (order: AdminOrder, newStatus: string) => {
+    // Optimistic update
+    setOrders((prev) =>
+      prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
+    );
+    try {
+      await api.patch(`/orders/${order.id}/status/`, { status: newStatus });
+      toast.success(`Order ${order.order_id} marked as ${newStatus}`);
+    } catch {
+      // Rollback
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, status: order.status } : o))
+      );
+      toast.error("Failed to update order status");
+    }
+  };
 
   const filtered = useMemo(() => orders.filter((o) => {
     if (status !== "all" && o.status !== status) return false;
-    if (q && !(o.id + o.customer + o.email).toLowerCase().includes(q.toLowerCase())) return false;
+    if (q && !`${o.order_id} ${o.customer} ${o.email}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   }), [orders, q, status]);
 
@@ -31,14 +71,21 @@ export default function AdminOrders() {
     <div className="space-y-5">
       <div>
         <h1 className="font-display text-2xl font-bold">Orders</h1>
-        <p className="text-sm text-muted-foreground">{filtered.length} orders</p>
+        <p className="text-sm text-muted-foreground">
+          {loading ? "Loading…" : `${filtered.length} orders`}
+        </p>
       </div>
 
       <Card className="p-4 shadow-card">
         <div className="grid gap-3 md:grid-cols-[1fr_200px]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search order, customer, email…" className="pl-9" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input
+              placeholder="Search order, customer, email…"
+              className="pl-9"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
@@ -68,23 +115,33 @@ export default function AdminOrders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((o) => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10 animate-pulse">
+                    Loading orders…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && filtered.map((o) => (
                 <motion.tr
                   key={o.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="border-b transition-colors hover:bg-muted/40"
                 >
-                  <TableCell className="font-medium">{o.id}</TableCell>
+                  <TableCell className="font-medium">{o.order_id}</TableCell>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{o.customer}</p>
-                      <p className="text-xs text-muted-foreground">{o.email}</p>
-                    </div>
+                    <p className="font-medium">{o.customer}</p>
+                    <p className="text-xs text-muted-foreground">{o.email}</p>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{new Date(o.date).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(o.date).toLocaleDateString()}
+                  </TableCell>
                   <TableCell>
-                    <Select value={o.status} onValueChange={(v) => setOrderStatus(o.id, v as OrderStatus)}>
+                    <Select
+                      value={o.status}
+                      onValueChange={(v) => handleStatusChange(o, v)}
+                    >
                       <SelectTrigger className="h-8 w-[130px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
@@ -98,13 +155,19 @@ export default function AdminOrders() {
                   <TableCell className="font-semibold">{formatPrice(o.amount)}</TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="ghost" size="icon">
-                      <Link to={`/admin/orders/${o.id}`}><Eye className="h-4 w-4" /></Link>
+                      <Link to={`/admin/orders/${o.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
                     </Button>
                   </TableCell>
                 </motion.tr>
               ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-10">No orders</TableCell></TableRow>
+              {!loading && filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
+                    No orders found
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>

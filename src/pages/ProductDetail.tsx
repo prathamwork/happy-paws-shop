@@ -201,7 +201,7 @@ const ProductDetail = () => {
 
           <div className="mt-8 grid grid-cols-3 gap-3">
             {[
-              { icon: Truck, label: "Free shipping", sub: "Over $49" },
+              { icon: Truck, label: "Free shipping", sub: "Over ₹49" },
               { icon: ShieldCheck, label: "Vet approved", sub: "100% safe" },
               { icon: RefreshCw, label: "30-day returns", sub: "No questions" },
             ].map((item) => (

@@ -3,7 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/store/theme";
-import { useAdmin } from "@/store/admin";
+import { useAuth } from "@/store/auth";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -22,8 +22,12 @@ import { Badge } from "@/components/ui/badge";
 
 export function AdminTopbar() {
   const { dark, toggle } = useTheme();
-  const logout = useAdmin((s) => s.logout);
+  const { logout, user } = useAuth(); // ✅ correct store
   const navigate = useNavigate();
+
+  const initials = user?.name
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "A";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/80 px-3 backdrop-blur md:px-6">
@@ -71,9 +75,11 @@ export function AdminTopbar() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="gap-2 px-2">
             <div className="h-7 w-7 rounded-full bg-gradient-primary grid place-items-center text-xs font-semibold text-primary-foreground">
-              A
+              {initials}
             </div>
-            <span className="hidden sm:inline text-sm font-medium">Admin</span>
+            <span className="hidden sm:inline text-sm font-medium">
+              {user?.name?.split(" ")[0] ?? "Admin"}
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">

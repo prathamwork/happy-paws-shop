@@ -26,7 +26,6 @@ export const useAuth = create<AuthState>()(
         set({ loading: true });
         try {
           const res = await loginUser({ email, password });
-          // Save BOTH tokens — refresh token persisted for silent renewal
           tokenStore.set({ access: res.access, refresh: res.refresh });
           set({ user: res.user });
           return res.user;
@@ -49,12 +48,10 @@ export const useAuth = create<AuthState>()(
 
       fetchProfile: async () => {
         if (!tokenStore.getAccess() && !tokenStore.getRefresh()) {
-          // No tokens at all — nothing to attempt
           set({ user: null, hydrated: true });
           return null;
         }
         try {
-          // api.ts interceptor will silently refresh if access token is stale
           const user = await getProfile();
           set({ user, hydrated: true });
           return user;
@@ -67,7 +64,9 @@ export const useAuth = create<AuthState>()(
 
       logout: () => {
         tokenStore.clear();
-        set({ user: null, hydrated: true });
+        set({ user: null, hydrated: true, loading: false });
+        // Wipe the persisted key so no stale user rehydrates on next mount
+        useAuth.persist.clearStorage();
       },
 
       isAdmin: () => get().user?.role === "admin",
@@ -79,7 +78,6 @@ export const useAuth = create<AuthState>()(
     {
       name: "pawsome-auth",
       partialize: (s) => ({ user: s.user }),
-      // Mark as hydrated once zustand rehydrates from localStorage
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;
       },

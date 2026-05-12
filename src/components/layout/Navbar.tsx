@@ -17,8 +17,8 @@ import { LogOut } from "lucide-react";
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
-  { to: "/shop?cat=dogs", label: "Dogs" },
-  { to: "/shop?cat=cat", label: "Cat" },
+  // { to: "/shop?cat=dogs", label: "Dogs" },
+  // { to: "/shop?cat=cat", label: "Cat" },
   { to: "/about", label: "About" },
 ];
 

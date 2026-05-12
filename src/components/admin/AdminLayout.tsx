@@ -3,13 +3,19 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
-import { useAdmin } from "@/store/admin";
+import { useAuth } from "@/store/auth";
+
+const ALLOWED_ROLES = ["admin", "manager"] as const;
 
 const AdminLayout = () => {
-  const authed = useAdmin((s) => s.authed);
+  const { user, hydrated } = useAuth();
   const location = useLocation();
 
-  if (!authed && !location.pathname.startsWith("/admin/login")) {
+  // Wait for zustand to rehydrate from localStorage before deciding
+  if (!hydrated) return null;
+
+  // Not logged in or not an admin/manager — redirect to login
+  if (!user || !ALLOWED_ROLES.includes(user.role as typeof ALLOWED_ROLES[number])) {
     return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 

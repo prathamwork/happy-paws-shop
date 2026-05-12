@@ -17,7 +17,7 @@ const OffersBanner = () => (
         <Link to="/shop?cat=accessories">
           <Button variant="default" className="rounded-full self-start">Shop toys</Button>
         </Link>
-        <div className="absolute -right-6 -bottom-6 text-[10rem] opacity-20">🦴</div>
+        <div className="absolute -right-6 -bottom-6 text-[10rem] opacity-20 select-none pointer-events-none">🦴</div>
       </motion.div>
 
       <motion.div
@@ -32,7 +32,7 @@ const OffersBanner = () => (
         <Link to="/shop">
           <Button variant="secondary" className="rounded-full self-start">Browse deals</Button>
         </Link>
-        <div className="absolute -right-6 -bottom-6 text-[10rem] opacity-20">🐾</div>
+        <div className="absolute -right-6 -bottom-6 text-[10rem] opacity-20 select-none pointer-events-none">🐾</div>
       </motion.div>
     </div>
   </section>

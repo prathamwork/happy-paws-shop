@@ -86,9 +86,10 @@ export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "c
 
 export interface OrderItem {
   id: number;
-  product: Product | number;
+  product: number | Product;
+  product_name?: string; 
   quantity: number;
-  price: string;
+  price: string | number;
 }
 
 export interface Order {
@@ -122,3 +123,6 @@ export interface AuthTokens {
 export interface AuthResponse extends AuthTokens {
   user: User;
 }
+
+
+

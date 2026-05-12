@@ -86,7 +86,7 @@ const Shop = () => {
       <div>
         <h4 className="font-display text-lg font-semibold mb-3">Max price</h4>
         <Slider value={[maxPrice]} max={2000} min={5} step={5} onValueChange={(v) => setMaxPrice(v[0])} />
-        <p className="text-sm text-muted-foreground mt-2">Up to ${maxPrice}</p>
+        <p className="text-sm text-muted-foreground mt-2">Up to ₹{maxPrice}</p>
       </div>
 
       <div>
