@@ -159,7 +159,7 @@ export default function AdminProducts() {
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <img src={p.image} alt={p.name} className="h-12 w-12 rounded-lg object-cover" />
+                      <img src={`${import.meta.env.VITE_API_IMAGE_URL}${p.image}`} alt={p.name} className="h-12 w-12 rounded-lg object-cover" />
                       <div>
                         <p className="font-medium leading-tight">{p.name}</p>
                         <p className="text-xs text-muted-foreground">{p.brand || "—"}</p>

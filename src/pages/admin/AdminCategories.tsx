@@ -241,7 +241,7 @@ export default function AdminCategories() {
               {c.image && (
                 <div className="relative">
                   <img
-                    src={c.image}
+                    src={`${import.meta.env.VITE_API_IMAGE_URL}${c.image}`}
                     alt={c.name}
                     className={`h-32 w-full object-cover transition-opacity ${!c.is_active ? "opacity-40" : ""}`}
                   />
