@@ -32,9 +32,9 @@ const Cart = () => {
   }
 
   const sub = subtotal();
-  const tax = sub * 0.08;
+  // const tax = sub * 0.08;
   const shipping = sub > 49 || sub === 0 ? 0 : 6.99;
-  const total = sub + tax + shipping;
+  const total = sub + shipping;
 
   if (items.length === 0) {
     return (
@@ -123,10 +123,10 @@ const Cart = () => {
               <span className="text-muted-foreground">Subtotal</span>
               <span className="font-medium">{formatPrice(sub)}</span>
             </div>
-            <div className="flex justify-between">
+            {/* <div className="flex justify-between">
               <span className="text-muted-foreground">Tax (8%)</span>
               <span className="font-medium">{formatPrice(tax)}</span>
-            </div>
+            </div> */}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
               <span className="font-medium">{shipping === 0 ? "Free" : formatPrice(shipping)}</span>

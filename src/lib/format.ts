@@ -6,4 +6,4 @@ export const toNumber = (v: number | string | null | undefined): number => {
 };
 
 export const formatPrice = (n: number | string | null | undefined) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(toNumber(n));
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(toNumber(n));

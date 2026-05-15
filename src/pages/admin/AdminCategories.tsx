@@ -206,7 +206,7 @@ export default function AdminCategories() {
               <div className="space-y-1.5">
                 <Label>Image</Label>
                 {createImg.preview && (
-                  <img src={createImg.preview} alt="preview" className="h-28 w-full object-cover rounded-lg" />
+                  <img src={`${import.meta.env.VITE_API_IMAGE_URL}${createImg.preview}`} alt="preview" className="h-28 w-full object-cover rounded-lg" />
                 )}
                 <input ref={createImg.fileRef} type="file" accept="image/*" className="hidden" onChange={createImg.pick} />
                 <Button
