@@ -27,7 +27,7 @@ const schema = z.object({
   price: z.coerce.number().positive("Price must be > 0").max(100000),
   original_price: z.coerce.number().nonnegative().optional(),
   stock: z.coerce.number().int().nonnegative().max(100000),
-  description: z.string().trim().min(10, "Add a short description").max(1000),
+  description: z.string().trim().min(10, "Add minimum 10 characters for the description").max(1000),
   is_active: z.boolean().default(true),
 });
 type FormValues = z.infer<typeof schema>;
