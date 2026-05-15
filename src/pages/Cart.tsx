@@ -12,13 +12,21 @@ const Cart = () => {
   const { items, loading, fetch, setQty, remove, subtotal } = useCart();
   const user = useAuth((s) => s.user);
 
-  useEffect(() => { if (user) fetch(); }, [user, fetch]);
+  useEffect(() => {
+    if (user) fetch();
+  }, [user, fetch]);
 
   if (!user) {
     return (
       <div className="container py-20 text-center">
-        <h1 className="font-display text-3xl font-bold mb-4">Sign in to view your cart</h1>
-        <Link to="/login"><Button size="lg" className="rounded-full">Sign in</Button></Link>
+        <h1 className="font-display text-3xl font-bold mb-4">
+          Sign in to view your cart
+        </h1>
+        <Link to="/login">
+          <Button size="lg" className="rounded-full">
+            Sign in
+          </Button>
+        </Link>
       </div>
     );
   }
@@ -42,9 +50,17 @@ const Cart = () => {
         <div className="size-24 rounded-full bg-muted grid place-items-center mx-auto mb-6">
           <ShoppingBag className="size-10 text-muted-foreground" />
         </div>
-        <h1 className="font-display text-3xl font-bold mb-2">Your cart is empty</h1>
-        <p className="text-muted-foreground mb-6">Time to spoil your furry friends.</p>
-        <Link to="/shop"><Button size="lg" className="rounded-full">Start shopping</Button></Link>
+        <h1 className="font-display text-3xl font-bold mb-2">
+          Your cart is empty
+        </h1>
+        <p className="text-muted-foreground mb-6">
+          Time to spoil your furry friends.
+        </p>
+        <Link to="/shop">
+          <Button size="lg" className="rounded-full">
+            Start shopping
+          </Button>
+        </Link>
       </div>
     );
   }
@@ -59,7 +75,7 @@ const Cart = () => {
     >
       <Link to={`/product/${item.product}`} className="shrink-0">
         <img
-          src={item.product_image}
+          src={`${import.meta.env.VITE_API_IMAGE_URL}${item.product_image}`}
           alt={item.product_name}
           className="size-24 md:size-28 object-cover rounded-2xl bg-muted"
           loading="lazy"
@@ -90,7 +106,9 @@ const Cart = () => {
           >
             <Minus className="size-3" />
           </Button>
-          <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+          <span className="w-8 text-center text-sm font-semibold">
+            {item.quantity}
+          </span>
           <Button
             size="icon"
             variant="ghost"
@@ -112,7 +130,9 @@ const Cart = () => {
 
   return (
     <div className="container py-10 md:py-14">
-      <h1 className="font-display text-4xl md:text-5xl font-bold mb-8">Your cart</h1>
+      <h1 className="font-display text-4xl md:text-5xl font-bold mb-8">
+        Your cart
+      </h1>
       <div className="grid lg:grid-cols-[1fr_380px] gap-10">
         <div className="space-y-4">{items.map(renderItem)}</div>
 
@@ -129,17 +149,26 @@ const Cart = () => {
             </div> */}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
-              <span className="font-medium">{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+              <span className="font-medium">
+                {shipping === 0 ? "Free" : formatPrice(shipping)}
+              </span>
             </div>
           </div>
           <div className="border-t border-border pt-4 flex justify-between items-baseline">
             <span className="font-display text-lg font-semibold">Total</span>
-            <span className="font-display text-2xl font-bold text-primary">{formatPrice(total)}</span>
+            <span className="font-display text-2xl font-bold text-primary">
+              {formatPrice(total)}
+            </span>
           </div>
           <Link to="/checkout">
-            <Button size="lg" className="w-full rounded-full shadow-warm">Checkout</Button>
+            <Button size="lg" className="w-full rounded-full shadow-warm">
+              Checkout
+            </Button>
           </Link>
-          <Link to="/shop" className="block text-center text-sm text-muted-foreground hover:text-foreground transition">
+          <Link
+            to="/shop"
+            className="block text-center text-sm text-muted-foreground hover:text-foreground transition"
+          >
             Continue shopping
           </Link>
         </aside>
