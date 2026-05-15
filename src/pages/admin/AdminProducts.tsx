@@ -28,7 +28,7 @@ interface AdminProduct {
   category: string;
   price: number;
   stock: number;
-  average_rating: number;  // ← was: ratings: number
+  average_rating: number;
   ratings: { id: number; rating: number; review: string }[];
   image: string;
   is_active: boolean;
@@ -68,6 +68,21 @@ export default function AdminProducts() {
       toast.success(`"${product.name}" deleted`);
     } catch {
       toast.error("Failed to delete product");
+    }
+  };
+
+  const handleStatusChange = async (product: AdminProduct, val: string) => {
+    const newStatus = val === "active";
+    try {
+      await api.patch(`/products/${product.id}/`, { is_active: newStatus });
+      setProducts((prev) =>
+        prev.map((item) =>
+          item.id === product.id ? { ...item, is_active: newStatus } : item
+        )
+      );
+      toast.success(`"${product.name}" marked as ${val}`);
+    } catch {
+      toast.error("Failed to update status");
     }
   };
 
@@ -180,11 +195,30 @@ export default function AdminProducts() {
                       <span>{p.stock}</span>
                     )}
                   </TableCell>
-                  <TableCell>{p.average_rating > 0 ? `${p.average_rating } ★` : "—"}</TableCell>
+                  <TableCell>{p.average_rating > 0 ? `${p.average_rating} ★` : "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={p.is_active ? "default" : "secondary"}>
-                      {p.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <Select
+                      value={p.is_active ? "active" : "inactive"}
+                      onValueChange={(val) => handleStatusChange(p, val)}
+                    >
+                      <SelectTrigger className="h-7 w-[110px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">
+                          <span className="flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
+                            Active
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="inactive">
+                          <span className="flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-gray-400 inline-block" />
+                            Inactive
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-1">
