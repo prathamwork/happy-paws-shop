@@ -22,10 +22,10 @@ import placeholder from "@/assets/p-toy.jpg";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Name is required").max(120),
-  brand: z.string().trim().max(60).default(""),
+  // brand: z.string().trim().max(60).default(""),
   category: z.string().min(1, "Category is required"),
   price: z.coerce.number().positive("Price must be > 0").max(100000),
-  original_price: z.coerce.number().nonnegative().optional(),
+  // original_price: z.coerce.number().nonnegative().optional(),
   stock: z.coerce.number().int().nonnegative().max(100000),
   description: z.string().trim().min(10, "Add minimum 10 characters for the description").max(1000),
   is_active: z.boolean().default(true),
@@ -107,7 +107,7 @@ export default function AdminProductForm() {
           name: p.name,
           category: p.category,
           price: p.price,
-          original_price: p.original_price,
+          // original_price: p.original_price,
           stock: p.stock,
           description: p.description ?? "",
           is_active: p.is_active,
@@ -140,19 +140,19 @@ export default function AdminProductForm() {
   };
   // ─────────────────────────────────────────────────────────────────────
 
-  const onSubmit = async (v: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     setSubmitting(true);
     try {
       const fd = new FormData();
-      fd.append("name", v.name);
-      // fd.append("brand",       v.brand ?? "");
-      fd.append("category", v.category);
-      fd.append("price", String(v.price));
-      fd.append("stock", String(v.stock));
-      fd.append("description", v.description);
-      fd.append("is_active", String(v.is_active));
-      if (v.original_price != null)
-        fd.append("original_price", String(v.original_price));
+      fd.append("name", data.name);
+      // fd.append("brand",       data.brand ?? "");
+      fd.append("category", data.category);
+      fd.append("price", String(data.price));
+      fd.append("stock", String(data.stock));
+      fd.append("description", data.description);
+      fd.append("is_active", String(data.is_active));
+      // if (data.original_price != null)
+      //   fd.append("original_price", String(data.original_price));
       if (imageFile) fd.append("image", imageFile);
 
       if (isEdit) {

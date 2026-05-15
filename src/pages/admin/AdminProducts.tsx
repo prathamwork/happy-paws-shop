@@ -28,7 +28,8 @@ interface AdminProduct {
   category: string;
   price: number;
   stock: number;
-  rating: number;
+  average_rating: number;  // ← was: ratings: number
+  ratings: { id: number; rating: number; review: string }[];
   image: string;
   is_active: boolean;
 }
@@ -179,7 +180,7 @@ export default function AdminProducts() {
                       <span>{p.stock}</span>
                     )}
                   </TableCell>
-                  <TableCell>{p.rating > 0 ? `${p.rating} ★` : "—"}</TableCell>
+                  <TableCell>{p.average_rating > 0 ? `${p.average_rating } ★` : "—"}</TableCell>
                   <TableCell>
                     <Badge variant={p.is_active ? "default" : "secondary"}>
                       {p.is_active ? "Active" : "Inactive"}
